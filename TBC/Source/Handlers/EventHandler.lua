@@ -27,6 +27,7 @@ function rm.handleAddonLoaded(event, addon)
         rm.updateSavedVariables()
         rm.updateSavedCharacters()
         rm.createAllFrameElements()
+        rm.createChatCommand()
         rm.frame:UnregisterEvent("ADDON_LOADED")
     end
 end

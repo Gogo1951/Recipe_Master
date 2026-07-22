@@ -3,10 +3,8 @@ local L = rm.L
 local F = rm.F
 
 function rm.createOptionsFrame()
-    rm.frame.name = L.title
-    local category = Settings.RegisterCanvasLayoutCategory(rm.frame, rm.frame.name)
-    category.ID = rm.frame.name
-    Settings.RegisterAddOnCategory(category)
+    rm.category = Settings.RegisterCanvasLayoutCategory(rm.frame, rm.frame.name)
+    Settings.RegisterAddOnCategory(rm.category)
     return rm.frame
 end
 

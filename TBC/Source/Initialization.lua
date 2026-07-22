@@ -1,7 +1,10 @@
 local addonName, rm = ...
 -- rm: Globals within Recipe Master (variables, functions, frames)
 
+rm.L = {} -- Localized text
+rm.L.title = C_AddOns.GetAddOnMetadata(addonName, "Title")
 rm.frame = CreateFrame("Frame")
+rm.frame.name = rm.L.title
 rm.version = C_AddOns.GetAddOnMetadata(addonName, "Version")
 rm.author = C_AddOns.GetAddOnMetadata(addonName, "Author")
 rm.currentCharacter = UnitName("player")
@@ -11,8 +14,6 @@ rm.currentServer = GetRealmName()
 rm.locale = GetLocale()
 rm.recipeDB = {}
 rm.recipeSourceDB = {}
-rm.L = {} -- Localized text
-rm.L.title = C_AddOns.GetAddOnMetadata(addonName, "Title")
 rm.F = { -- Frame settings
     backdrops = {},
     colors = {},
@@ -21,14 +22,8 @@ rm.F = { -- Frame settings
     offsets = {},
     sizes = {},
     templates = {},
-    textures = {}
+    textures = {},
 }
-
--- Creates the chat command "/rm" to open the add-on's options menu
-SLASH_RECIPEMASTER1 = "/rm"
-SlashCmdList["RECIPEMASTER"] = function()
-    Settings.OpenToCategory(rm.frame.name)
-end
 
 local defaultMainFramePreferences = {
     sortAscending = true,
@@ -52,7 +47,7 @@ local defaultOptionsFramePreferences = {
     showDifficultyTooltipInfo = true,
     showAltsTooltipInfo = true,
     showOppositeFactionAltsTooltipInfo = true,
-    showSourcesTooltipInfo = true
+    showSourcesTooltipInfo = true,
 }
 
 function rm.resetOptionsFramePreferences()
@@ -112,5 +107,13 @@ function rm.updateSavedCharacters()
     end
     if not RecipeMasterProfessionsAndSkills[rm.currentServer][rm.currentFaction][rm.currentCharacter] then
         RecipeMasterProfessionsAndSkills[rm.currentServer][rm.currentFaction][rm.currentCharacter] = {}
+    end
+end
+
+-- Creates the chat command "/rm" to open the add-on's options menu
+function rm.createChatCommand()
+    SLASH_RECIPEMASTER1 = "/rm"
+    SlashCmdList["RECIPEMASTER"] = function()
+        Settings.OpenToCategory(rm.category:GetID())
     end
 end
