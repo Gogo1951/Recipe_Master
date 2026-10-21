@@ -1,5 +1,4 @@
 local _, rm = ...
-local L = rm.L
 local F = rm.F
 
 local function isDragonflightUiEnabledAndVisible()
@@ -32,14 +31,8 @@ local function isCraftFrameVisible()
     return CraftFrame and CraftFrame:IsVisible()
 end
 
-local function isTradeSkillMasterEnabledAndVisible()
-    return (
-        TSM_API and (
-            TSM_API.IsUIVisible("CRAFTING") 
-            or isTradeSkillFrameVisible() 
-            or isCraftFrameVisible()
-        )
-    )
+local function isTradeSkillMasterVisible()
+    return rm.tradeSkillMasterFrame and rm.tradeSkillMasterFrame:IsVisible()
 end
 
 function rm.getProfessionFrame()
@@ -49,89 +42,14 @@ function rm.getProfessionFrame()
         return SkilletFrame
     elseif isWiderProfessionsEnabledAndVisible() then
         return CraftTradeSkillFrame
-    elseif isTradeSkillMasterEnabledAndVisible() then
-        return UIParent
+    elseif isTradeSkillMasterVisible() then
+        return rm.tradeSkillMasterFrame
     elseif isTradeSkillFrameVisible() and not isCraftFrameVisible() then
         return TradeSkillFrame
     elseif isCraftFrameVisible() then
         return CraftFrame
     end
     return false
-end
-
-local function onMainFrameDragStart(frame, button, mainFrameWidth)
-    if button == "LeftButton" then
-        frame:StartMoving()
-    elseif button == "RightButton" then
-        local isSourcesTabActive = (rm.activeTab == L.sources and #rm.sourcesList.children > 0)
-        local minHeight, maxHeight = 296, 700
-        local width = isSourcesTabActive and F.sizes.sourcesFrameWidth or mainFrameWidth
-        rm.mainFrame:SetResizeBounds(width, minHeight, width, maxHeight)
-        frame:StartSizing()
-    end
-end
-
-local function onMainFrameDragStop(frame, preferenceKey)
-    local _, _, _, xOffset, yOffset = frame:GetPoint()
-    frame:StopMovingOrSizing()
-    rm.setPreference(preferenceKey, {xOffset, yOffset})
-    rm.setPreference("mainFrameHeight", rm.mainFrame:GetHeight())
-end
-
-local function onRestoreButtonDragStart(frame, button)
-    if button == "LeftButton" then
-        frame:StartMoving()
-    end
-end
-
-local function onRestoreButtonDragStop(frame, preferenceKey)
-    local _, _, _, xOffset, yOffset = frame:GetPoint()
-    frame:StopMovingOrSizing()
-    rm.setPreference(preferenceKey, {xOffset, yOffset})
-end
-
-local function registerMainFrameDragEvents(mainFrameWidth)
-    rm.mainFrame:RegisterForDrag("LeftButton", "RightButton")
-    rm.mainFrame:SetScript("OnDragStart", function(self, button)
-        onMainFrameDragStart(self, button, mainFrameWidth)
-    end)
-    rm.mainFrame:SetScript("OnDragStop", function(self)
-        onMainFrameDragStop(self, "mainFrameOffsets")
-    end)
-end
-
-local function registerRestoreButtonDragEvents()
-    rm.restoreButton:RegisterForDrag("LeftButton", "RightButton")
-    rm.restoreButton:SetScript("OnDragStart", onRestoreButtonDragStart)
-    rm.restoreButton:SetScript("OnDragStop", function(self)
-        onRestoreButtonDragStop(self, "restoreButtonOffsets")
-    end)
-end
-
-local function initializeMainFrame(professionFrame, mainFrameWidth)
-    rm.mainFrame:SetSize(1, rm.getPreference("mainFrameHeight"))
-    rm.mainFrame:ClearAllPoints()
-    rm.mainFrame:SetPoint("TOPLEFT", professionFrame, unpack(rm.getPreference("mainFrameOffsets")))
-    rm.mainFrame:SetMovable(true)
-    rm.mainFrame:SetResizable(true)
-end
-
-local function initializeRestoreButton(professionFrame)
-    rm.restoreButton:SetFrameStrata("DIALOG")
-    rm.restoreButton:ClearAllPoints()
-    rm.restoreButton:SetPoint("TOPLEFT", professionFrame, unpack(rm.getPreference("restoreButtonOffsets")))
-    rm.restoreButton:SetMovable(true)
-    rm.restoreButton:SetResizable(false)
-end
-
-local function setMainFrameMovableAndResizable(professionFrame, mainFrameWidth)
-    initializeMainFrame(professionFrame, mainFrameWidth)
-    registerMainFrameDragEvents(mainFrameWidth)
-end
-
-local function setRestoreButtonMovable(professionFrame)
-    initializeRestoreButton(professionFrame)
-    registerRestoreButtonDragEvents()
 end
 
 local function getDefaultFramesOffsets()
@@ -163,6 +81,7 @@ local function setDefaultFramesRestoreButtonAnchor(closeButton, exitButton, rest
 end
 
 local function setFramePointsRelativeToParent(professionFrame)
+    rm.mainFrame:ClearAllPoints()
     rm.restoreButton:ClearAllPoints()
     if professionFrame == DragonflightUIProfessionFrame then
         rm.restoreButton:SetPoint("TOPLEFT", professionFrame, "TOPRIGHT", 2, -1)
@@ -186,21 +105,29 @@ local function setFramePointsRelativeToParent(professionFrame)
     end
 end
 
-local function updatePositionBasedOnParent(professionFrame, mainFrameWidth)
-    if professionFrame == UIParent then -- TSM is enabled
-        setMainFrameMovableAndResizable(professionFrame, mainFrameWidth)
-        setRestoreButtonMovable(professionFrame)
-    else
-        setFramePointsRelativeToParent(professionFrame)
-    end
-end
-
 function rm.setParentDependentFramesPosition()
     local professionFrame = rm.getProfessionFrame()
     if professionFrame then
-        local mainFrameWidth = rm.mainFrame:GetWidth()
-        updatePositionBasedOnParent(professionFrame, mainFrameWidth)
+        setFramePointsRelativeToParent(professionFrame)
         rm.mainFrame:SetFrameStrata(professionFrame:GetFrameStrata())
+        rm.restoreButton:SetFrameStrata(professionFrame:GetFrameStrata())
+    end
+end
+
+-- TSM passes its crafting frame when it's shown, and nothing when it's hidden
+local function onTradeSkillMasterVisibilityChanged(isVisible, frame)
+    rm.tradeSkillMasterFrame = isVisible and frame or nil
+    -- Waits for TSM to show the default frame when switching to it
+    RunNextFrame(function()
+        if rm.getProfessionFrame() then
+            rm.setParentDependentFramesPosition()
+        end
+    end)
+end
+
+function rm.registerTradeSkillMasterCallback()
+    if TSM_API then
+        TSM_API.RegisterUICallback("CRAFTING", "RecipeMaster:MainFrame", onTradeSkillMasterVisibilityChanged)
     end
 end
 
@@ -224,7 +151,8 @@ end
 function rm.hideSourcesFrameElements()
     rm.sourcesHeader.recipeIcon:Hide()
     rm.sourcesHeader.recipeName:Hide()
-    rm.sourcesScrollFame:Hide()
+    rm.sourcesBackButton:Hide()
+    rm.sourcesTableArea:Hide()
     rm.uniqueSourceText:Hide()
     rm.sourcesInstructions:Hide()
 end
@@ -238,7 +166,19 @@ function rm.hideMainFrame()
     rm.mainFrame:Hide()
 end
 
+local function anchorCenteredText()
+    rm.centeredText:ClearAllPoints()
+    if rm.recipesScrollFrame:IsShown() then
+        rm.centeredText:SetPoint("TOPLEFT", rm.recipesScrollFrame)
+        -- Extended over the scroll bar so that it's also centered horizontally
+        rm.centeredText:SetPoint("BOTTOMRIGHT", rm.recipesScrollFrame, -F.offsets.recipesListScrollX, 0)
+    else
+        rm.centeredText:SetPoint("CENTER")
+    end
+end
+
 function rm.showCenteredText(string, color)
+    anchorCenteredText()
     rm.centeredText:SetText(string)
     rm.centeredText:SetTextColor(unpack(color))
     rm.centeredText:Show()

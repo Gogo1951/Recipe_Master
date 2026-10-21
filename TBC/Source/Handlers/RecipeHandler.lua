@@ -28,7 +28,7 @@ end
 
 local function isRecipeForCurrentSpecialization(recipe)
     local professionID = rm.getProfessionID(rm.displayedProfession)
-    local currentSpecialization = rm.getSavedSpecializationByID(professionID)
+    local currentSpecialization = rm.getSavedSpecializationByProfessionID(professionID)
     return (
         not recipe.specialization 
         or not currentSpecialization 
@@ -64,13 +64,9 @@ function rm.getAllCharactersRecipeStatus(recipe, professionID)
     return charactersMissingRecipeSkill, charactersWithRecipeSkill
 end
 
-local function isRankupRecipe(recipe)
-    return type(recipe.teaches) == "string"
-end
-
 -- Identifies a rankup recipe that teaches a rank equal to or lower than the current profession rank
 local function isLearnedRankupRecipe(recipe)
-    if not isRankupRecipe(recipe) then
+    if not rm.isRankupRecipe(recipe) then
         return false
     end
     local professionRank = rm.getSavedProfessionRank(rm.displayedProfession)
@@ -83,7 +79,7 @@ local function isLearnedSpecializationRecipe(recipe)
         return false
     end
     local professionID = rm.getProfessionID(rm.displayedProfession)
-    local currentSpecialization = rm.getSavedSpecializationByID(professionID)
+    local currentSpecialization = rm.getSavedSpecializationByProfessionID(professionID)
     if not currentSpecialization then
         return false
     end
@@ -132,13 +128,13 @@ end
 local function getInitialSpellData(ID, spellData, professionID)
     local name = GetSpellInfo(ID)
     -- Appends rank level to a rankup spell's name
-    if isRankupRecipe(spellData) then
+    if rm.isRankupRecipe(spellData) then
         name = name.." - "..L[spellData.teaches:lower()]
     end
     local link = "|cff71d5ff|Hspell:"..ID.."|h["..name.."]|h|r"
     local texture = GetSpellTexture(ID)
     -- Fallback for undesired placeholder icon
-    if texture == 136235 and type(spellData.teaches) == "number" then
+    if texture == 136235 and not rm.isRankupRecipe(spellData) then
         texture = C_Item.GetItemIconByID(spellData.teaches)
     end
     return name, link, nil, texture
@@ -147,6 +143,7 @@ end
 local function getRecipeData(recipeID, recipeData, professionID, initialDataFunction)
     local rName, rLink, rQuality, rTexture = initialDataFunction(recipeID, recipeData, professionID)
     return {
+        ID = recipeID,
         classes = recipeData["classes"], 
         difficulty = recipeData["difficulty"],
         faction = recipeData["faction"], 

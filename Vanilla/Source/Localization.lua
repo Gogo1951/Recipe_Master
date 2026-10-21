@@ -1,6 +1,7 @@
 local _, rm = ...
 local L = rm.L
 
+L.all = ALL
 L.apprentice = APPRENTICE
 L.artisan = ARTISAN
 L.boss = BOSS
@@ -10,6 +11,7 @@ L.classes = ITEM_CLASSES_ALLOWED
 L.color = COLOR
 L.common = ITEM_QUALITY1_DESC
 L.congratulations = SPLASH_BOOST_HEADER
+L.craftedItem = LOOT_JOURNAL_LEGENDARIES_SOURCE_CRAFTED_ITEM
 L.crafters = GUILD_TRADE_SKILL_CRAFTERS_COLON
 L.drop = LOOT
 L.dungeon = LFG_TYPE_DUNGEON
@@ -40,7 +42,7 @@ L.recipes = TRADESKILL_SERVICE_LEARN
 L.resetDefaults = RESET_TO_DEFAULT
 L.show = SHOW
 L.skill = SKILL
-L.sortBy = select(1, strsplit(" ", RAID_FRAME_SORT_LABEL))..HEADER_COLON -- The first word of "Sort By" + ":"
+L.sortBy = (RAID_FRAME_SORT_LABEL:gsub(":%s*$", ""):gsub("：$", "")) -- "Sort By" without a trailing colon
 L.sources = SOURCES
 L.subtitle = string.format(PETITION_CREATOR, rm.author).."\n"..GAME_VERSION_LABEL.." "..rm.version -- "Created by Breno Ludgero \n Version x.x.x"
 L.uiScale = UI_SCALE
@@ -209,26 +211,36 @@ L.uniqueSourceInstructions = {
         -- Ashiran, Wowhead.com
     },
     [14401] = {
-        ["deDE"] = "Er kann von einem priester kontrolliert werden, der\n"..
-                "dann das Rezept an Spieler in der Nähe weitergeben kann",
+        ["deDE"] = "Ein Priester kann ihn gedankenkontrollieren und\n"..
+                "Spielern in der Nähe das Rezept beibringen,\n"..
+                "unabhängig von ihrer Berufsstufe",
         ["enUS"] = "He can be mindcontrolled by a priest,\n"..
-                "who can then teach the recipe to nearby players",
+                "who can then teach the recipe to nearby players,\n"..
+                "regardless of their profession level",
         ["esES"] = "Puede ser controlado mentalmente por un sacerdote,\n"..
-                "que luego puede enseñar la receta a los jugadores cercanos",
+                "que luego puede enseñar la receta a los jugadores\n"..
+                "cercanos, sin importar su nivel de profesión",
         ["esMX"] = "Puede ser controlado mentalmente por un sacerdote,\n"..
-                "que luego puede enseñar la receta a los jugadores cercanos",
+                "que luego puede enseñar la receta a los jugadores\n"..
+                "cercanos, sin importar su nivel de profesión",
         ["frFR"] = "Il peut être contrôlé par un prêtre,\n"..
-                "qui peut alors enseigner la recette aux joueurs voisins",
-        ["koKR"] = "사제가 마인드컨트롤할 수 있으며,\n"..
-                "사제는 주변 플레이어에게 레시피를 가르칠 수 있습니다",
+                "qui peut alors enseigner la recette aux joueurs voisins,\n"..
+                "quel que soit leur niveau de métier",
+        ["koKR"] = "사제가 마인드컨트롤하면\n"..
+                "주변 플레이어에게 레시피를 가르칠 수 있습니다\n"..
+                "(플레이어의 전문 기술 레벨과 무관)",
         ["ptBR"] = "Ele pode ter a mente controlada por um sacerdote,\n"..
-                "que pode então ensinar a receita aos jogadores próximos",
+                "que pode então ensinar a receita aos jogadores próximos,\n"..
+                "independentemente do nível de profissão deles",
         ["ruRU"] = "Его сознанием может управлять жрец,\n"..
-                "который затем может научить рецепту ближайших игроков",
-        ["zhCN"] = "他可以被牧师控制心智，\n"..
-                "然后牧师可以将配方传授给附近的玩家",
-        ["zhTW"] = "他可以被牧師控制心智，\n"..
-                "然後牧師可以將配方傳授給附近的玩家"
+                "который затем может научить рецепту ближайших игроков,\n"..
+                "независимо от уровня их профессии",
+        ["zhCN"] = "一名牧师可以控制他的心智，\n"..
+                "然后将配方传授给附近的玩家，\n"..
+                "无论其专业技能等级如何",
+        ["zhTW"] = "一名牧師可以控制他的心智，\n"..
+                "然後將配方傳授給附近的玩家，\n"..
+                "無論其專業技能等級如何"
         -- Eihrister, Wowhead.com
     },
     [16365] = {
@@ -260,6 +272,11 @@ if rm.locale == "enUS" then
         [197] = "Tailoring",
         [2842] = L.poisons
     }
+    -- Gathering professions have no recipes; they are only tracked to display skill levels in tooltips
+    L.gatheringProfessions = {
+        [182] = "Herbalism",
+        [393] = "Skinning"
+    }
     L.recipePrefixes = {"Recipe: ", "Plans: ", "Formula: ", "Schematic: ", "Pattern: ", "Manual: "}
     L.backgroundOpacity = "Background Opacity"
     L.blue = "Blue"
@@ -281,16 +298,22 @@ if rm.locale == "enUS" then
     L.showAltsTooltipInfo = "Show Characters' Status"
     L.showOppositeFactionAltsTooltipInfo = "Include Opposite Faction"
     L.showDifficultyTooltipInfo = "Show Difficulty Levels"
-    L.showLearnedRecipes = "Show Learned Recipes"
-    L.showRecipesInfo = "Show Recipe Details"
+    L.showLearned = "Show Learned"
+    L.showDetails = "Show Details"
     L.showSourcesTooltipInfo = "Show Sources"
     L.stock = "Stock"
     L.trivial = "Trivial"
     L.updateIconDropdown = "Restore Window Icon"
     L.pickpocket = "Pickpocket"
     L.trainer = "Trainer"
-    L.yourSkill = "Your Skill"
-    return
+    L.showOnMap = "Show on Map"
+    L.showQuestDetails = "Show Quest Details"
+    L.setTomTomWaypoint = "Set TomTom Waypoint"
+    L.dropsRecipe = "Drops %s"
+    L.sellsRecipe = "Sells %s"
+    L.teachesRecipe = "Teaches %s"
+    L.startsQuest = "Starts %s"
+    L.clickToDismiss = "Click to dismiss"
 
 elseif rm.locale == "esMX" or rm.locale == "esES" then
     L.professions = {
@@ -305,6 +328,11 @@ elseif rm.locale == "esMX" or rm.locale == "esES" then
         [186] = "Minería",
         [197] = "Sastrería",
         [2842] = L.poisons
+    }
+    -- Gathering professions have no recipes; they are only tracked to display skill levels in tooltips
+    L.gatheringProfessions = {
+        [182] = "Herboristería",
+        [393] = "Desuello"
     }
     if rm.locale == "esES" then
         L.professions[197] = "Costura"
@@ -333,16 +361,22 @@ elseif rm.locale == "esMX" or rm.locale == "esES" then
     L.showAltsTooltipInfo = "Mostrar el Estado de Personajes"
     L.showOppositeFactionAltsTooltipInfo = "Incluir Facción Opuesta"
     L.showDifficultyTooltipInfo = "Mostrar Niveles de Dificultad"
-    L.showLearnedRecipes = "Mostrar Recetas Aprendidas"
-    L.showRecipesInfo = "Mostrar Detalles de la Receta"
+    L.showLearned = "Mostrar Aprendidas"
+    L.showDetails = "Mostrar Detalles"
     L.showSourcesTooltipInfo = "Mostrar Fuentes"
     L.stock = "Reserva"
     L.trivial = "Trivial"
     L.updateIconDropdown = "Icono de Restauración de la Ventana"
     L.pickpocket = "Robo"
+    L.showOnMap = "Mostrar en el Mapa"
+    L.showQuestDetails = "Mostrar Detalles de la Misión"
     L.trainer = "Instructor"
-    L.yourSkill = "Tu Habilidad"
-    return
+    L.setTomTomWaypoint = "Crear Punto de Ruta en TomTom"
+    L.dropsRecipe = "Suelta %s"
+    L.sellsRecipe = "Vende %s"
+    L.teachesRecipe = "Enseña %s"
+    L.clickToDismiss = "Haz clic para descartar"
+    L.startsQuest = "Inicia %s"
 
 elseif rm.locale == "ptBR" then
     L.professions = {
@@ -357,6 +391,11 @@ elseif rm.locale == "ptBR" then
         [186] = "Mineração",
         [197] = "Alfaiataria",
         [2842] = L.poisons
+    }
+    -- Gathering professions have no recipes; they are only tracked to display skill levels in tooltips
+    L.gatheringProfessions = {
+        [182] = "Herborismo",
+        [393] = "Esfolamento"
     }
     L.recipePrefixes = {"Receita: ", "Instruções: ", "Fórmula: ", "Diagrama: ", "Molde: ", "Manual: "}
     L.backgroundOpacity = "Opacidade do Fundo"
@@ -379,17 +418,22 @@ elseif rm.locale == "ptBR" then
     L.showAltsTooltipInfo = "Mostrar o Estado dos Personagens"
     L.showOppositeFactionAltsTooltipInfo = "Incluir Facção Oposta"
     L.showDifficultyTooltipInfo = "Mostrar Níveis de Dificuldade"
-    L.showLearnedRecipes = "Mostrar Receitas Aprendidas"
-    L.showRecipesInfo = "Mostrar Detalhes da Receita"
+    L.showLearned = "Mostrar Aprendidas"
+    L.showDetails = "Mostrar Detalhes"
     L.showSourcesTooltipInfo = "Mostrar Fontes"
     L.stock = "Estoque"
-    L.sortBy = "Ordenar:"
     L.trivial = "Trivial"
     L.updateIconDropdown = "Ícone do Botão de Restaurar Janela"
     L.pickpocket = "Bater carteira"
+    L.showOnMap = "Mostrar no Mapa"
+    L.showQuestDetails = "Mostrar Detalhes da Missão"
     L.trainer = "Instrutor"
-    L.yourSkill = "Sua Habilidade"
-    return
+    L.setTomTomWaypoint = "Criar Ponto de Rota no TomTom"
+    L.dropsRecipe = "Derruba %s"
+    L.sellsRecipe = "Vende %s"
+    L.teachesRecipe = "Ensina %s"
+    L.clickToDismiss = "Clique para descartar"
+    L.startsQuest = "Inicia %s"
 
 elseif rm.locale == "deDE" then
     L.professions = {
@@ -404,6 +448,11 @@ elseif rm.locale == "deDE" then
         [186] = "Bergbau",
         [197] = "Schneiderei",
         [2842] = L.poisons
+    }
+    -- Gathering professions have no recipes; they are only tracked to display skill levels in tooltips
+    L.gatheringProfessions = {
+        [182] = "Kräuterkunde",
+        [393] = "Kürschnerei"
     }
     L.recipePrefixes = {"Rezept: ", "Pläne: ", "Formel: ", "Bauplan: ", "Muster: ", "Handbuch: "}
     L.backgroundOpacity = "Hintergrundopazität"
@@ -427,16 +476,22 @@ elseif rm.locale == "deDE" then
     L.showAltsTooltipInfo = "Status der Charaktere Anzeigen"
     L.showDifficultyTooltipInfo = "Schwierigkeitsgrade Anzeigen"
     L.showOppositeFactionAltsTooltipInfo = "Gegnerische Fraktion Einbeziehen"
-    L.showLearnedRecipes = "Gelernte Rezepte Anzeigen"
-    L.showRecipesInfo = "Rezeptdetails Anzeigen"
+    L.showLearned = "Gelernte Anzeigen"
+    L.showDetails = "Details Anzeigen"
     L.showSourcesTooltipInfo = "Quellen Anzeigen"
     L.stock = "Lager"
     L.trivial = "Trivial"
     L.updateIconDropdown = "Symbol für Fenster Wiederherstellen"
     L.pickpocket = "Taschendieb"
+    L.showOnMap = "Auf der Karte Anzeigen"
+    L.showQuestDetails = "Questdetails Anzeigen"
     L.trainer = "Lehrer"
-    L.yourSkill = "Eure Fertigkeit"
-    return
+    L.setTomTomWaypoint = "TomTom-Wegpunkt Setzen"
+    L.dropsRecipe = "Lässt %s fallen"
+    L.sellsRecipe = "Verkauft %s"
+    L.teachesRecipe = "Lehrt %s"
+    L.clickToDismiss = "Klicken zum Entfernen"
+    L.startsQuest = "Startet %s"
 
 elseif rm.locale == "frFR" then
     L.professions = {
@@ -451,6 +506,11 @@ elseif rm.locale == "frFR" then
         [186] = "Minage",
         [197] = "Couture",
         [2842] = L.poisons
+    }
+    -- Gathering professions have no recipes; they are only tracked to display skill levels in tooltips
+    L.gatheringProfessions = {
+        [182] = "Herboristerie",
+        [393] = "Dépeçage"
     }
     L.recipePrefixes = {"Recette : ", "Plan : ", "Plans : ", "Formule : ", "Schéma : ", "Patron : ", "Manuel : "}
     L.backgroundOpacity = "Opacité de l'Arrière-plan"
@@ -475,16 +535,22 @@ elseif rm.locale == "frFR" then
     L.showAltsTooltipInfo = "Afficher l'État des Personnages"
     L.showOppositeFactionAltsTooltipInfo = "Inclure la Faction Opposée"
     L.showDifficultyTooltipInfo = "Afficher les Niveaux de Difficulté"
-    L.showLearnedRecipes = "Afficher les Recettes Apprises"
-    L.showRecipesInfo = "Afficher les Détails de la Recette"
+    L.showLearned = "Afficher les Apprises"
+    L.showDetails = "Afficher les Détails"
     L.showSourcesTooltipInfo = "Afficher les Sources"
     L.stock = "Réserve"
     L.trivial = "Trivial"
     L.updateIconDropdown = "Icône de Restauration de la Fenêtre"
     L.pickpocket = "Vol à la tire"
+    L.showOnMap = "Afficher sur la Carte"
+    L.showQuestDetails = "Afficher les Détails de la Quête"
     L.trainer = "Maître"
-    L.yourSkill = "Votre compétence"
-    return
+    L.setTomTomWaypoint = "Placer un Point de Passage TomTom"
+    L.dropsRecipe = "Laisse tomber %s"
+    L.sellsRecipe = "Vend %s"
+    L.teachesRecipe = "Enseigne %s"
+    L.clickToDismiss = "Cliquez pour retirer"
+    L.startsQuest = "Commence %s"
 
 elseif rm.locale == "ruRU" then
     L.professions = {
@@ -499,6 +565,11 @@ elseif rm.locale == "ruRU" then
         [186] = "Горное дело",
         [197] = "Портняжное дело",
         [2842] = L.poisons
+    }
+    -- Gathering professions have no recipes; they are only tracked to display skill levels in tooltips
+    L.gatheringProfessions = {
+        [182] = "Травничество",
+        [393] = "Снятие шкур"
     }
     L.recipePrefixes = {"Рецепт: ", "Чертеж: ", "Формула ", "Формула: ", "Схема: ", "Выкройка: ", "Учебник: "}
     L.backgroundOpacity = "Прозрачность фона"
@@ -523,17 +594,22 @@ elseif rm.locale == "ruRU" then
     L.showAltsTooltipInfo = "Показать Состояние Персонажей"
     L.showOppositeFactionAltsTooltipInfo = "Включить Противостоящую Фракцию"
     L.showDifficultyTooltipInfo = "Показать Уровни Сложности"
-    L.showLearnedRecipes = "Показывать Выученные Рецепты"
-    L.showRecipesInfo = "Показать Подробности Рецепта"
+    L.showLearned = L.learned
+    L.showDetails = "Детали"
     L.showSourcesTooltipInfo = "Показать Источники"
-    L.sortBy = "Сорт:"
     L.stock = "Склад"
     L.trivial = "Тривиальный"
     L.updateIconDropdown = "Значок окна Восстановления"
     L.pickpocket = "Карманник"
+    L.showOnMap = "Показать на Карте"
+    L.showQuestDetails = "Показать Подробности Задания"
     L.trainer = "Учитель"
-    L.yourSkill = "Ваш навык"
-    return
+    L.setTomTomWaypoint = "Установить Точку Маршрута TomTom"
+    L.dropsRecipe = "Роняет %s"
+    L.sellsRecipe = "Продает %s"
+    L.teachesRecipe = "Обучает %s"
+    L.clickToDismiss = "Щелкните, чтобы убрать"
+    L.startsQuest = "Начинает %s"
 
 elseif rm.locale == "koKR" then
     L.professions = {
@@ -548,6 +624,11 @@ elseif rm.locale == "koKR" then
         [186] = "채광",
         [197] = "재봉술",
         [2842] = L.poisons
+    }
+    -- Gathering professions have no recipes; they are only tracked to display skill levels in tooltips
+    L.gatheringProfessions = {
+        [182] = "약초 채집",
+        [393] = "무두질"
     }
     L.recipePrefixes = {"조리법: ", "도면: ", "주문식: ", "설계도: ", "도안: ", "처방전: "}
     L.backgroundOpacity = "배경 불투명도"
@@ -570,16 +651,22 @@ elseif rm.locale == "koKR" then
     L.showAltsTooltipInfo = "캐릭터 상태 표시"
     L.showOppositeFactionAltsTooltipInfo = "반대 세력을 포함하다"
     L.showDifficultyTooltipInfo = "난이도 표시하기"
-    L.showLearnedRecipes = "배웠던 레시피 보기"
-    L.showRecipesInfo = "레시피 세부 정보 표시"
+    L.showLearned = "배웠던 레시피 보기"
+    L.showDetails = "세부 정보 표시"
     L.showSourcesTooltipInfo = "소스 표시"
     L.stock = "재고"
     L.trivial = "사소한"
     L.updateIconDropdown = "복원 창 아이콘"
     L.pickpocket = "훔치기"
+    L.showOnMap = "지도에 표시"
+    L.showQuestDetails = "퀘스트 세부 정보 표시"
     L.trainer = "트레이너"
-    L.yourSkill = "내 숙련도"
-    return
+    L.setTomTomWaypoint = "TomTom 웨이포인트 설정"
+    L.dropsRecipe = "%s 드랍"
+    L.sellsRecipe = "%s 판매"
+    L.teachesRecipe = "%s 교육"
+    L.clickToDismiss = "클릭하여 제거"
+    L.startsQuest = "%s 시작"
 
 elseif rm.locale == "zhTW" then
     L.professions = {
@@ -594,6 +681,11 @@ elseif rm.locale == "zhTW" then
         [186] = "採礦",
         [197] = "裁縫",
         [2842] = L.poisons
+    }
+    -- Gathering professions have no recipes; they are only tracked to display skill levels in tooltips
+    L.gatheringProfessions = {
+        [182] = "草藥學",
+        [393] = "剝皮"
     }
     L.recipePrefixes = {"食譜：", "設計圖：", "公式：", "結構圖：", "結構圖 : ", "圖樣：", "圖樣 : ", "說明書：", "手冊：", "配方："}
     L.backgroundOpacity = "背景不透明度"
@@ -616,17 +708,22 @@ elseif rm.locale == "zhTW" then
     L.showAltsTooltipInfo = "顯示角色狀態"
     L.showOppositeFactionAltsTooltipInfo = "包括对立派系"
     L.showDifficultyTooltipInfo = "顯示難度等級"
-    L.showLearnedRecipes = "顯示已學會的食譜"
-    L.showRecipesInfo = "顯示食譜詳細信息"
+    L.showLearned = "顯示已學會"
+    L.showDetails = "顯示詳細信息"
     L.showSourcesTooltipInfo = "顯示來源"
-    L.sortBy = "分類："
     L.stock = "存貨"
     L.trivial = "瑣碎"
     L.updateIconDropdown = "恢復視窗圖示"
     L.pickpocket = "搜索"
+    L.showOnMap = "在地圖上顯示"
+    L.showQuestDetails = "顯示任務詳情"
     L.trainer = "訓練師"
-    L.yourSkill = "你的技能"
-    return
+    L.setTomTomWaypoint = "設定TomTom路徑點"
+    L.dropsRecipe = "掉落%s"
+    L.sellsRecipe = "販售%s"
+    L.teachesRecipe = "教授%s"
+    L.clickToDismiss = "點擊以移除"
+    L.startsQuest = "開始%s"
 
 elseif rm.locale == "zhCN" then
     L.professions = {
@@ -641,6 +738,11 @@ elseif rm.locale == "zhCN" then
         [186] = "采矿",
         [197] = "裁缝",
         [2842] = L.poisons
+    }
+    -- Gathering professions have no recipes; they are only tracked to display skill levels in tooltips
+    L.gatheringProfessions = {
+        [182] = "草药学",
+        [393] = "剥皮"
     }
     L.recipePrefixes = {"食谱：", "配方：", "设计图：", "公式：", "结构图：", "图样：", "手册："}
     L.backgroundOpacity = "背景不透明度"
@@ -663,13 +765,20 @@ elseif rm.locale == "zhCN" then
     L.showAltsTooltipInfo = "显示角色状态"
     L.showOppositeFactionAltsTooltipInfo = "包括对立派系"
     L.showDifficultyTooltipInfo = "显示难度级别"
-    L.showLearnedRecipes = "显示已学会的食谱"
-    L.showRecipesInfo = "显示食谱详细信息"
+    L.showLearned = "显示已学会"
+    L.showDetails = "显示详细信息"
     L.showSourcesTooltipInfo = "显示来源"
     L.stock = "存货"
     L.trivial = "琐碎"
     L.updateIconDropdown = "恢复窗口图标"
     L.pickpocket = "搜索"
+    L.showOnMap = "在地图上显示"
+    L.showQuestDetails = "显示任务详情"
     L.trainer = "训练师"
-    L.yourSkill = "你的技能"
+    L.setTomTomWaypoint = "设置TomTom路径点"
+    L.dropsRecipe = "掉落%s"
+    L.sellsRecipe = "出售%s"
+    L.teachesRecipe = "教授%s"
+    L.clickToDismiss = "点击以移除"
+    L.startsQuest = "开始%s"
 end

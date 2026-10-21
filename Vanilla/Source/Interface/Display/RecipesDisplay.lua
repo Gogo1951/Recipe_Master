@@ -36,7 +36,7 @@ local function handleLearnedRecipe(recipe)
     if not rm.isLearnedRecipe(recipe) then
         return
     end
-    if rm.getPreference("showLearnedRecipes") then
+    if rm.getPreference("showLearnedRecipes") and rm.isRecipeFromSelectedSource(recipe) then
         rm.createRecipeRow(recipe, F.colors.gray, true) -- Gray text and desaturated icon
     end
     rm.learnedRecipesCount = rm.learnedRecipesCount + 1
@@ -46,8 +46,10 @@ local function handleMissingRecipe(recipe)
     if not rm.isMissingRecipeOfCurrentFaction(recipe) or rm.isLearnedRecipe(recipe) then
         return
     end
-    local r, g, b = C_Item.GetItemQualityColor(recipe.quality)
-    rm.createRecipeRow(recipe, {r, g, b})
+    if rm.isRecipeFromSelectedSource(recipe) then
+        local r, g, b = C_Item.GetItemQualityColor(recipe.quality)
+        rm.createRecipeRow(recipe, {r, g, b})
+    end
     rm.missingRecipesCount = rm.missingRecipesCount + 1
 end
 
@@ -79,12 +81,12 @@ function rm.showRecipesForSpecificProfession(professionName)
     rm.updateRecipesList()
 end
 
-local function isFishingDisplayed()
+function rm.isFishingDisplayed()
     return rm.displayedProfession == L.professions[356]
 end
 
 function rm.showSortedRecipes()
-    if isFishingDisplayed() then
+    if rm.isFishingDisplayed() then
         rm.showRecipesForSpecificProfession(rm.displayedProfession)
     else
         rm.showRecipesForSpecificProfession(rm.lastDisplayedProfession)

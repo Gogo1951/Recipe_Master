@@ -24,27 +24,28 @@ function rm.createAllFrameElements()
 
     ------------------------- Recipes / Fishing frame -------------------------
     rm.progressContainer = rm.createProgressContainer(rm.mainFrame)
-    rm.divider = rm.createDivider(rm.progressContainer) -- The background frame containing searchBar and sortDropdown
+    rm.divider = rm.createDivider(rm.progressContainer) -- The frame containing searchBar and the check buttons
     rm.recipesScrollFrame = rm.createRecipesScrollFrame(rm.mainFrame)
     rm.recipesList = rm.createRecipesList(rm.recipesScrollFrame)
     rm.recipesScrollFrame:SetScrollChild(rm.recipesList)
     rm.searchBar = rm.createSearchBar(rm.divider)
-    rm.sortDropdown = rm.createSortDropdown(rm.divider)
-    rm.createSortByText(rm.sortDropdown)
-    rm.createSortOrderButton(rm.sortDropdown)
+    rm.sortByDropdown = rm.createSortByDropdown(rm.divider)
+    rm.searchBar:SetPoint("RIGHT", rm.sortByDropdown, "LEFT", -4, 0) -- Fills the space up to the dropdown
+    rm.showLearnedCheckButton = rm.createShowLearnedCheckButton(rm.divider)
+    rm.createShowDetailsCheckButton(rm.divider)
+    rm.createSortOrderButton(rm.sortByDropdown)
+    rm.sourceFilterDropdown = rm.createSourceFilterDropdown(rm.divider)
     rm.progressBar = rm.createProgressBar(rm.progressContainer)
     rm.progressBarText = rm.createProgressBarText(rm.progressBar)
 
     ------------------------- Sources frame -------------------------
     rm.sourcesInstructions = rm.createSourcesInstructions(rm.mainFrame)
     rm.sourcesHeader = rm.createSourcesHeader(rm.mainFrame) -- Recipe icon and name
-    rm.sourcesListTabs = {}
-    rm.sourcesScrollFame = rm.createSourcesScrollFrame(rm.mainFrame)
-    rm.sourcesList = rm.createSourcesList(rm.mainFrame)
-    rm.sourcesScrollFame:SetScrollChild(rm.sourcesList)
-    rm.sourcesColumnsContainer = rm.createColumnsContainer(rm.sourcesList)
-    rm.sourcesListColumns = {}
-    rm.uniqueSourceText = rm.createUniqueSourceText(rm.sourcesList)
+    rm.sourcesBackButton = rm.createSourcesBackButton(rm.mainFrame)
+    rm.sourcesTableArea = rm.createSourcesTableArea(rm.mainFrame)
+    rm.sourcesTable = rm.createSourcesTable(rm.sourcesTableArea)
+    rm.sourcesTabs = {}
+    rm.uniqueSourceText = rm.createUniqueSourceText(rm.sourcesTableArea)
 
     ------------------------- Options frame -------------------------
     rm.optionsFrame = rm.createOptionsFrame()
@@ -65,8 +66,6 @@ function rm.createAllFrameElements()
         progressColor = rm.createProgressColorDropdown(),
         restoreButton = rm.createRestoreIconDropdown(),
         ---------- Checkboxes ----------
-        showRecipesInfo = rm.createShowRecipesInfoCheckButton(),
-        showLearnedButton = rm.createShowLearnedCheckButton(),
         showDifficultyTooltipInfo = rm.createDifficultyTooltipInfoCheckButton(),
         showSourcesTooltipInfo = rm.createSourcesTooltipInfoCheckButton(),
         showAltsTooltipInfo = rm.createAltsTooltipInfoCheckButton(),

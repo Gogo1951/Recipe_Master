@@ -4,6 +4,7 @@ local L = rm.L
 rm.activeTab = L.recipes
 rm.displayedProfession = ""
 rm.lastDisplayedProfession = ""
+rm.selectedRecipeSource = "All"
 rm.learnedRecipesCount = 0
 rm.missingRecipesCount = 0
 rm.totalRecipesCount = 0
@@ -38,6 +39,10 @@ local sourceTypes = {
     ["fishing"] = L.fishing,
     ["item"] = L.item
 }
+
+function rm.isRankupRecipe(recipe)
+    return type(recipe.teaches) == "string"
+end
 
 function rm.getLocalizedSourceType(sourceType)
     return sourceTypes[sourceType]

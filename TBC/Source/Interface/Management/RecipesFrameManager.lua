@@ -37,10 +37,10 @@ local function updateMainWidthBasedOnWidestRecipeName()
     end
 end
 
-local function getSpecializationDisplayName()
-    local specialization = rm.getSavedSpecializationByName(rm.displayedProfession)
-    if specialization then
-        return GetSpellInfo(specialization)
+local function getSavedSpecializationName()
+    local specializationID = rm.getSavedSpecializationByProfessionName(rm.displayedProfession)
+    if specializationID then
+        return GetSpellInfo(specializationID)
     end
     return ""
 end
@@ -62,17 +62,30 @@ local function updateProgressBar()
     end
     local progress = rm.learnedRecipesCount.."/"..rm.totalRecipesCount
     rm.progressBar:SetValue(rm.learnedPercentage)
-    local specialization = getSpecializationDisplayName()
+    local specialization = getSavedSpecializationName()
     rm.progressBarText:SetText(progress.." ("..rm.learnedPercentage.."%) "..specialization)
     updateProgressBarColor()
+end
+
+-- Checked on every update so that changing the filters shows or hides the message right away
+local function congratulateIfEmptyList()
+    if #rm.recipesList.children == 0 then
+        rm.showCenteredText(L.congratulations, F.colors.gold)
+    else
+        rm.centeredText:Hide()
+    end
 end
 
 function rm.updateRecipesList()
     if rm.getProfessionFrame() then -- Avoids the same error described in updateProgressBar()
         rm.clearFrameContent()
+        rm.updateSourceFilterDropdown()
         rm.listProfessionRecipes()
+        rm.filterRecipesBySearchText()
+        rm.updateRecipesFrameElementsPosition()
         updateMainWidthBasedOnWidestRecipeName()
         updateProgressBar()
+        congratulateIfEmptyList()
     end
 end
 

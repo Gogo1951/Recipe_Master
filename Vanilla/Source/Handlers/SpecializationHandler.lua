@@ -1,12 +1,12 @@
 local _, rm = ...
 
-function rm.getSavedSpecializationByID(professionID)
+function rm.getSavedSpecializationByProfessionID(professionID)
     if rm.getSavedVariablesForCurrentCharacter()[professionID] then -- Avoids an error when unlearning a profession
         return rm.getSavedVariablesForCurrentCharacter()[professionID]["specialization"]
     end
 end
 
-function rm.getSavedSpecializationByName(professionName)
+function rm.getSavedSpecializationByProfessionName(professionName)
     local savedProfession = rm.getSavedVariablesForCurrentCharacter()[rm.getProfessionID(professionName)]
     if savedProfession then
         return savedProfession["specialization"]
@@ -20,10 +20,28 @@ function rm.getSpecializationName(specializationID)
 end
 
 local specializationIDs = {
-    [164] = {9788, 17041, 17040, 17039, 9787},
-    [202] = {20219, 20222},
-    [165] = {10657, 10658, 10660}
+    [164] = {9787, 9788, 17039, 17040, 17041}, -- Blacksmithing
+    [165] = {10657, 10658, 10660}, -- Leatherworking
+    [202] = {20219, 20222}, -- Engineering
 }
+
+-- Spellbook spell IDs that differ from the ones above (e.g. Dragonscale Leatherworking)
+local specializationAliases = {
+    [10656] = 165,
+}
+
+-- Returns the base profession of a specialization spell (e.g. Armorsmith -> Blacksmithing)
+function rm.getProfessionIDBySpecialization(spellID)
+    if specializationAliases[spellID] then
+        return specializationAliases[spellID]
+    end
+    for professionID, specs in pairs(specializationIDs) do
+        if rm.tableContains(specs, spellID) then
+            return professionID
+        end
+    end
+    return false
+end
 
 local function professionHasSpecializations(professionID)
     return specializationIDs[professionID] ~= nil
@@ -63,7 +81,7 @@ end
 
 function rm.saveNewSpecializations(currentSpecializations)
     for professionID, specializationID in pairs(currentSpecializations) do
-        local savedSpecialization = rm.getSavedSpecializationByID(professionID)
+        local savedSpecialization = rm.getSavedSpecializationByProfessionID(professionID)
         if rm.isSodProfessionWithSpecializations(professionID) then
             local savedSpecs = rm.getSavedProfessionByID(professionID)["specialization"]
             if type(savedSpecs) ~= "table" then
@@ -104,14 +122,4 @@ function rm.removeAbandonedSpecialization(currentSpecializations, professionID)
             end
         end
     end
-end
-
--- Returns the ID of the profession a specialization spell belongs to (e.g. 202 for Goblin Engineering)
-function rm.getProfessionIDBySpecializationSpell(spellID)
-    for professionID, specializations in pairs(specializationIDs) do
-        if rm.tableContains(specializations, spellID) then
-            return professionID
-        end
-    end
-    return false
 end

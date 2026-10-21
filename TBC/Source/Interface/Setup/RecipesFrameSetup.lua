@@ -31,6 +31,7 @@ local function showSourcesForRecipe(recipe)
     rm.showSourcesFrameElements()
     rm.activateBottomTabAndDesaturateOthers(rm.recipeSourcesTab)
     rm.showAllSources(recipe)
+    rm.sourcesBackButton:Show()
 end
 
 function rm.createChatLinkOrDisplaySourcesOnClick(icon, recipe)
@@ -52,8 +53,8 @@ local function getMissingRequirementsText(recipe)
         missingRequirements = missingRequirements..skillInfo
     end
     if recipe.specialization then
-        local savedSpecialization = rm.getSavedSpecializationByName(rm.displayedProfession)
-        if recipe.specialization ~= savedSpecialization then 
+        local savedSpecializationID = rm.getSavedSpecializationByProfessionName(rm.displayedProfession)
+        if recipe.specialization ~= savedSpecializationID then 
             local specializationInfo = rm.getSpecializationName(recipe.specialization).."  "
             missingRequirements = missingRequirements..specializationInfo
         end
@@ -111,11 +112,15 @@ function rm.displayPlaceholderTextBasedOnFocus(searchBar)
     searchBar:SetScript("OnEditFocusGained", function(self)
         self.Instructions:Hide()
         self.clearButton:Show()
+        rm.frame:RegisterEvent("GLOBAL_MOUSE_DOWN") -- Handled by handleMouseDown while focused (EventHandler.lua)
     end)
     searchBar:SetScript("OnEditFocusLost", function(self)
-        self.Instructions:Show()
-        self.clearButton:Hide()
-        searchBar:SetText("")
+        rm.frame:UnregisterEvent("GLOBAL_MOUSE_DOWN")
+        -- Keeps existing search text when pressing Escape
+        if self:GetText() == "" then
+            self.Instructions:Show()
+            self.clearButton:Hide()
+        end
     end)
 end
 
@@ -124,17 +129,36 @@ local function isSearchInRecipeName(row, searchText)
     return string.find(recipeName, searchText, 1, true)
 end
 
+function rm.filterRecipesBySearchText()
+    local searchText = rm.searchBar:GetText():lower()
+    for _, row in ipairs(rm.recipesList.children) do
+        if isSearchInRecipeName(row, searchText) then
+            row:Show()
+        else
+            row:Hide()
+        end
+    end
+end
+
+-- Called when switching professions or tabs
+function rm.clearSearchBar()
+    rm.searchBar:SetText("")
+    rm.searchBar:ClearFocus()
+    rm.searchBar.Instructions:Show()
+    rm.searchBar.clearButton:Hide()
+end
+
 function rm.showMatchingRecipesOnTop(searchBar)
     searchBar:SetScript("OnTextChanged", function(self)
-        local searchText = self:GetText():lower()
-        for _, row in ipairs(rm.recipesList.children) do
-            if isSearchInRecipeName(row, searchText) then
-                row:Show()
-            else
-                row:Hide()
-            end
-        end
+        rm.filterRecipesBySearchText()
         rm.updateRecipesFrameElementsPosition()
+    end)
+end
+
+function rm.toggleRecipesListPreferenceOnClick(button, preference)
+    button:SetScript("OnClick", function(self)
+        rm.toggleBooleanPreference(preference)
+        rm.showSortedRecipes()
     end)
 end
 
@@ -164,6 +188,57 @@ function rm.handleSortingOptions(dropdown, options)
             end)
         end
     end)
+end
+
+local function getDisplayedProfessionSources()
+    local professionID = rm.getProfessionID(rm.displayedProfession)
+    return rm.recipesBySource[professionID] or {}
+end
+
+local function getSourceFilterName(sourceType)
+    if sourceType == "All" then
+        return L.all
+    end
+    return rm.getLocalizedSourceType(sourceType)
+end
+
+local function filterRecipesBySource(dropdown, sourceType)
+    rm.selectedRecipeSource = sourceType
+    dropdown:SetDefaultText(getSourceFilterName(sourceType))
+    rm.showSortedRecipes()
+end
+
+function rm.handleSourceFilterOptions(dropdown)
+    dropdown:SetupMenu(function(self, rootDescription)
+        rootDescription:CreateButton(L.all, function()
+            filterRecipesBySource(self, "All")
+        end)
+        local professionSources = getDisplayedProfessionSources()
+        for _, sourceType in ipairs(rm.sourcesOrder) do
+            if professionSources[sourceType] then
+                rootDescription:CreateButton(getSourceFilterName(sourceType), function()
+                    filterRecipesBySource(self, sourceType)
+                end)
+            end
+        end
+    end)
+end
+
+-- Resets the filter if the displayed profession has no recipes from the selected source
+function rm.updateSourceFilterDropdown()
+    if not getDisplayedProfessionSources()[rm.selectedRecipeSource] then
+        rm.selectedRecipeSource = "All"
+    end
+    rm.sourceFilterDropdown:GenerateMenu()
+    rm.sourceFilterDropdown:SetDefaultText(getSourceFilterName(rm.selectedRecipeSource))
+end
+
+function rm.isRecipeFromSelectedSource(recipe)
+    if rm.selectedRecipeSource == "All" then
+        return true
+    end
+    local professionSources = getDisplayedProfessionSources()
+    return professionSources[rm.selectedRecipeSource][recipe.ID]
 end
 
 local function isValueAColor(value, savedValue)

@@ -17,77 +17,114 @@ function rm.highlightInactiveOnMouseover(tab)
     end)
 end
 
-local function isCellUnderFirstColumn(cell)
-    local cellParent = select(2, cell:GetPoint())
-    local cellParentXOffset = select(4, cellParent:GetPoint())
-    return cellParentXOffset < 4
-end
-
-local function showUnshortenedName(tooltip, cell, data)
-    if string.find(cell:GetText(), "...", 0, true) then -- Cell text contains "..."
-        if isCellUnderFirstColumn(cell) then
-            tooltip:SetText(data["fullName"])
+function rm.showPreviousTabOnBackButtonClick(button)
+    button:SetScript("OnClick", function()
+        if rm.isFishingDisplayed() then
+            rm.fishingTab:Click()
         else
-            tooltip:SetText(data["fullZoneName"][cell:GetText()] or data["fullZoneName"])
+            rm.recipesTab:Click()
         end
-        tooltip:Show()
-    end
+    end)
 end
 
-local function getColoredCellInfo(cell, cellColor, data)
-    local cellParentColumnText = select(2, cell:GetPoint()):GetText()
-    if cellParentColumnText == L.name and cellColor ~= F.colors.grayHex then
-        return data["classesAndRaces"]
-    elseif cellColor == F.colors.grayHex then
-        return L.questCompleted
-    else
-        return data["classification"]
-    end
-end
-
--- Only cells under the Level or Quest Name column have a specific color
-local function showColoredCellInfo(tooltip, cell, data)
-    local cellColor = string.match(cell:GetText(), "|c(%x%x%x%x%x%x%x%x)")
-    if cellColor and cellColor ~= F.colors.whiteHex then
-        local info = getColoredCellInfo(cell, cellColor, data)
-        local tooltipText = _G[tooltip:GetName().."TextLeft"..1]:GetText()
-        if tooltipText then -- Tooltip already has an unshortened name
-            tooltip:SetText(tooltipText.."\n\n"..info)
-        else
-            tooltip:SetText(info)
+function rm.showSourcesOnTabClick(tab)
+    tab:SetScript("OnClick", function(self)
+        if not self.active then
+            rm.showSourcesTab(self.sourceType)
         end
-        tooltip:Show()
-    end
+    end)
 end
 
-function rm.showTooltipOnMouseover(cell, data)
+local function getCellTooltipText(cell)
+    local lines = {}
+    if cell.text:IsTruncated() then
+        table.insert(lines, cell.text:GetText())
+    end
+    if cell.tooltip then
+        table.insert(lines, cell.tooltip)
+    end
+    return table.concat(lines, "\n\n")
+end
+
+function rm.showCellTooltipOnMouseover(cell)
     cell:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        showUnshortenedName(GameTooltip, cell, data)
-        showColoredCellInfo(GameTooltip, cell, data)
+        local tooltipText = getCellTooltipText(self)
+        if tooltipText ~= "" then
+            GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            GameTooltip:SetText(tooltipText)
+            GameTooltip:Show()
+        end
     end)
     cell:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
+    -- Clicks go through to the main frame so it can still be dragged from the table
+    cell:EnableMouseMotion(true)
+    cell:SetMouseClickEnabled(false)
 end
 
-local function hideSourceColumns(columnList)
-    for _, column in pairs(columnList) do
-        column:Hide()
+local function getMouseButtonIcon(atlas)
+    return CreateAtlasMarkup(atlas, F.sizes.sourcesTableMouseIconWidth, F.sizes.sourcesTableMouseIconHeight)
+end
+
+local function getMapButtonTooltipText()
+    local lines = {getMouseButtonIcon(F.atlases.leftMouseButton).." "..L.showOnMap}
+    if rm.isTomTomLoaded() then
+        table.insert(lines, getMouseButtonIcon(F.atlases.rightMouseButton).." "..L.setTomTomWaypoint)
     end
+    return table.concat(lines, "\n")
 end
 
-function rm.showSourcesOnTabClick(tab, sources)
-    tab:SetScript("OnClick", function(self)
-        if not self.active then
-            rm.clearSourcesList()
-            for sourceType, columnList in pairs(rm.sourcesListColumns) do
-                if sourceType == self.label then
-                    rm.showTabRows(sources, sourceType, columnList)
-                else
-                    hideSourceColumns(columnList)
-                end
-            end
+function rm.showMapButtonTooltipOnMouseover(button)
+    button:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:SetText(getMapButtonTooltipText())
+        GameTooltip:Show()
+    end)
+    button:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+end
+
+-- Without TomTom, both clicks show the map
+function rm.showSourceLocationOnMapButtonClick(button)
+    button:SetScript("OnClick", function(self, mouseButton)
+        if mouseButton == "RightButton" and rm.isTomTomLoaded() then
+            rm.setTomTomWaypoints(self.source)
+        else
+            rm.showSourceOnWorldMap(self.source)
         end
+    end)
+end
+
+-- Questie's quest details need its database, loaded a few seconds after logging in
+function rm.isQuestieReady()
+    return C_AddOns.IsAddOnLoaded("Questie") and Questie.API ~= nil and Questie.API.isReady == true
+end
+
+function rm.showQuestieButtonTooltipOnMouseover(button)
+    button:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:SetText(getMouseButtonIcon(F.atlases.leftMouseButton).." "..L.showQuestDetails)
+        GameTooltip:Show()
+    end)
+    button:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+end
+
+-- Questie shows its own tooltip for quest links, as when clicking them in the chat.
+-- Clicking the same quest again closes it
+function rm.showQuestieDetailsOnQuestieButtonClick(button)
+    button:SetScript("OnClick", function(self)
+        if rm.isQuestieReady() then
+            ItemRefTooltip:SetHyperlink("quest:"..self.questID..":0")
+        end
+    end)
+end
+
+function rm.updateTableHeightOnAreaResize(area)
+    area:SetScript("OnSizeChanged", function()
+        rm.updateSourcesTableHeight()
     end)
 end

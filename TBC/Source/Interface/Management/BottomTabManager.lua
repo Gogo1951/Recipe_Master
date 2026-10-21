@@ -2,7 +2,19 @@ local _, rm = ...
 local L = rm.L
 local F = rm.F
 
+local function isSwitchingList(tab)
+    if tab == rm.recipesTab then
+        return rm.isFishingDisplayed()
+    elseif tab == rm.fishingTab then
+        return not rm.isFishingDisplayed()
+    end
+    return false
+end
+
 function rm.activateBottomTabAndDesaturateOthers(tab)
+    if isSwitchingList(tab) then
+        rm.clearSearchBar()
+    end
     for _, bottomTab in pairs(rm.bottomTabs) do
         if bottomTab == tab then
             bottomTab.active = true
@@ -15,20 +27,9 @@ function rm.activateBottomTabAndDesaturateOthers(tab)
     end
 end
 
-local function isRecipeListEmpty()
-    return rm.mainFrame:IsShown() and #rm.recipesList.children == 0
-end
-
-local function congratulateIfEmptyList()
-    if isRecipeListEmpty() then
-        rm.showCenteredText(L.congratulations, F.colors.gold)
-    end
-end
-
 function rm.handleRecipesTabClick()
     rm.showRecipesFrameElements()
     rm.showRecipesForSpecificProfession(rm.lastDisplayedProfession)
-    congratulateIfEmptyList()
 end
 
 function rm.handleSourcesTabClick()
@@ -48,5 +49,4 @@ function rm.handleFishingTabClick()
         return
     end
     rm.showRecipesForSpecificProfession(L.professions[356])
-    congratulateIfEmptyList()
 end

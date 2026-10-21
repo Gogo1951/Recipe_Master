@@ -2,18 +2,18 @@ local _, rm = ...
 local L = rm.L
 local F = rm.F
 
-local function isSpecialLeatherworkingRecipe(recipeID)
+local function isSpecificLeatherworkingRecipe(recipeID)
     return (
-        recipeID == 22694 
-        or recipeID == 22695 
-        or recipeID == 22697 
-        or recipeID == 22698
+        recipeID == 22694    -- Pattern: Polar Gloves
+        or recipeID == 22695 -- Pattern: Polar Bracers
+        or recipeID == 22697 -- Pattern: Icy Scale Gauntlets
+        or recipeID == 22698 -- Pattern: Icy Scale Bracers
     )
 end
 
 -- Recipes that have a profession name different than the profession's display name for some languages
 local function handleMismatchedProfessionNames(recipeID, itemLink)
-    if isSpecialLeatherworkingRecipe(recipeID) then
+    if isSpecificLeatherworkingRecipe(recipeID) then
         return L.professions[165]
     end
     local professionName = select(7, C_Item.GetItemInfo(itemLink))
@@ -54,7 +54,7 @@ local function getColoredSpecialization(characterProfessionData, recipeSpecializ
     return specialization
 end
 
-local function getRecipeTooltipMessage(recipe, professionID)
+local function getRecipeTooltipMessage(recipe, professionID, isCraftedItem)
     local message = ""
     local newLine = "\n"
     local newLineInfo = "\n  "
@@ -98,7 +98,14 @@ local function getRecipeTooltipMessage(recipe, professionID)
             end
         end
     end
-    return "Recipe Master"..WrapTextInColorCode(message, F.colors.whiteHex)
+    local coloredMessage = WrapTextInColorCode(message, F.colors.whiteHex)
+    if isCraftedItem then
+        local professionName = L.professions[professionID]
+        local craftedByProffesion = WrapTextInColorCode(L.craftedItem..' - '..professionName, F.colors.whiteHex)
+        return "Recipe Master"..newLine..craftedByProffesion..coloredMessage
+    else
+        return "Recipe Master"..coloredMessage
+    end
 end
 
 -- Ensures that the message is not displayed twice
@@ -128,24 +135,34 @@ local function getRecipeInfo(itemLink)
     return false, false
 end
 
+local function isSpellData(data)
+    return data.link and string.find(data.link, "|Hspell:", 1, true)
+end
+
 local function getSpellInfo(spellID)
-    local possibleProfessionIDs = {
-        186,  -- Mining
-        2842, -- Poisons
-        202,  -- Engineering
-        333   -- Enchanting
-    }
-    for _, professionID in ipairs(possibleProfessionIDs) do
+    for professionID in pairs(L.professions) do
         local spell = rm.cachedRecipes[professionID][spellID]
-        if spell then
+        -- Ignores recipe items that share the spell's ID
+        -- e.g. "Formula: Brilliant Mana Oil" and spell "Create Soulstone (Major)"
+        if spell and isSpellData(spell) and not rm.isRankupRecipe(spell) then
             return spell, professionID
         end
     end
     return false, false
 end
 
-local function showMessageInTooltip(tooltip, item, professionID)
-    local message = getRecipeTooltipMessage(item, professionID)
+-- Items crafted by the recipes (e.g. Silk Bandage, Greater Magic Wand)
+local function getCraftedItemInfo(itemName, itemLink)
+    local itemID = rm.getIDFromLink(itemLink)
+    local craftedItem = rm.craftedItems[itemID] or rm.craftedEnchantingItems[itemName]
+    if craftedItem then
+        return craftedItem.recipe, craftedItem.professionID
+    end
+    return false, false
+end
+
+local function showMessageInTooltip(tooltip, item, professionID, isCraftedItem)
+    local message = getRecipeTooltipMessage(item, professionID, isCraftedItem)
     local messageLineCount = select(2, message:gsub("\n", "\n"))
     if messageLineCount > 0 then -- Not counting the "Recipe Master" header
         appendMessage(tooltip, message)
@@ -161,14 +178,23 @@ local function isItemARecipe(itemName)
     return false
 end
 
--- Appends the message to a recipe's tooltip
-GameTooltip:HookScript("OnTooltipSetItem", function(tooltip, ...)
-    if rm.getPreference("showAltsTooltipInfo") or rm.getPreference("showSourcesTooltipInfo") then
-        local itemName, itemLink = tooltip:GetItem()
-        if itemName and isItemARecipe(itemName) then
-            local recipe, professionID = getRecipeInfo(itemLink)
-            showMessageInTooltip(tooltip, recipe, professionID)
+local function showMessageInRecipesOrCraftedItemsTooltip(tooltip)
+    local itemName, itemLink = tooltip:GetItem()
+    if itemName and isItemARecipe(itemName) then
+        local recipe, professionID = getRecipeInfo(itemLink)
+        showMessageInTooltip(tooltip, recipe, professionID, false)
+    elseif itemLink then
+        local recipe, professionID = getCraftedItemInfo(itemName, itemLink)
+        if recipe then
+            showMessageInTooltip(tooltip, recipe, professionID, true)
         end
+    end
+end
+
+-- Appends the message to a recipe's or crafted item's tooltip
+GameTooltip:HookScript("OnTooltipSetItem", function(tooltip)
+    if rm.getPreference("showAltsTooltipInfo") or rm.getPreference("showSourcesTooltipInfo") then
+        showMessageInRecipesOrCraftedItemsTooltip(tooltip)
     end
 end)
 
@@ -178,18 +204,14 @@ GameTooltip:HookScript("OnTooltipSetSpell", function(tooltip)
         local _, spellID = tooltip:GetSpell()
         if spellID then
             local spell, professionID = getSpellInfo(spellID)
-            showMessageInTooltip(tooltip, spell, professionID)
+            showMessageInTooltip(tooltip, spell, professionID, false)
         end
     end
 end)
 
 -- Appends the message to a chat link tooltip
-ItemRefTooltip:HookScript("OnTooltipSetItem", function(tooltip, ...)
+ItemRefTooltip:HookScript("OnTooltipSetItem", function(tooltip)
     if rm.getPreference("showAltsTooltipInfo") or rm.getPreference("showSourcesTooltipInfo") then
-        local itemName, itemLink = tooltip:GetItem()
-        if itemName and isItemARecipe(itemName) then
-            local recipe, professionID = getRecipeInfo(itemLink)
-            showMessageInTooltip(tooltip, recipe, professionID)
-        end
+        showMessageInRecipesOrCraftedItemsTooltip(tooltip)
     end
 end)
